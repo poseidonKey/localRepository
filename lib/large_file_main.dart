@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -42,8 +44,28 @@ class _LargeFileMainState extends State<LargeFileMain> {
                   ),
                 ),
               )
-            : Image.network(
-                "https://images.pexels.com/photos/240040/pexels-photo-240040.jpeg"),
+            : FutureBuilder(
+                builder: (context, snapshot) {
+                  switch (snapshot.connectionState) {
+                    case ConnectionState.none:
+                      print('none');
+                      return Text('데이터 없음');
+                    case ConnectionState.waiting:
+                      print('waiting');
+                      return CircularProgressIndicator();
+                    case ConnectionState.active:
+                      print('active');
+                      return CircularProgressIndicator();
+                    case ConnectionState.done:
+                      print('done');
+                      if (snapshot.hasData) {
+                        return snapshot.data as Widget;
+                      }
+                  }
+                  return Text('데이터 없음');
+                },
+                future: downloadWidget(file),
+              ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -52,6 +74,21 @@ class _LargeFileMainState extends State<LargeFileMain> {
         child: Icon(Icons.file_download),
       ),
     );
+  }
+
+  Future<Widget> downloadWidget(String filePath) async {
+    File file = File(filePath);
+    bool exist = await file.exists();
+    new FileImage(file).evict();
+    if (exist) {
+      return Center(
+        child: Column(
+          children: <Widget>[Image.file(File(filePath))],
+        ),
+      );
+    } else {
+      return Text('No Data');
+    }
   }
 
   Future<void> downloadFile() async {
